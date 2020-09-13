@@ -1,55 +1,188 @@
-import * as utils from './utils'
+import * as utils from '../shared/utils'
 import fiber from './scheduler'
 
 function render(vnode, container) {
-  container.appendChild(_render(vnode))
+  if (!vnode) container.innerHTML = ''
+  patch(null, vnode, container)
 }
 
-// vnode => dom
-function _render(vnode) {
-  // handle text node
-  if (vnode === null || typeof vnode === 'undefined') vnode = ''
-  if (typeof vnode === 'string' || typeof vnode === 'number') {
-    vnode = String(vnode)
+// vnode rendered in container
+function patch(oldVnode, vnode, container) {
+  // initial mount
+  if (!oldVnode) {
+    container.appendChild(mountVnode(vnode))
+    return
   }
-  if (typeof vnode === 'string') {
-    return createTextNode(String(vnode))
+
+  // destroy, unmount old dom
+  if (!vnode) {
+    if (utils.isComponent(oldVnode.type)) {
+      unmountComponent(oldVnode._instance)
+    }
+    container.removeChild(oldVnode._dom)
+    return
+  }
+
+  // vnode with different type, unmount old dom, append new dom
+  if (oldVnode.type !== vnode.type) {
+    if (utils.isComponent(oldVnode)) {
+      unmountComponent(oldVnode._instance)
+    }
+    container.replaceChild(oldVnode._dom, mountVnode(vnode))
+    return
+  }
+
+  // vnode with same type, patch
+  patchVnode(oldVnode, vnode)
+}
+
+// vnode -> dom
+function mountVnode(vnode) {
+  let dom
+  // Text node
+  if (utils.isText(vnode.type)) {
+    dom = createTextNode(vnode.children)
   }
 
   if (utils.isHtmlTag(vnode.type)) {
-    return createElm(vnode)
+    dom = createElement(vnode)
   }
 
-  if (typeof vnode.type === 'function') {
+  if (utils.isComponent(vnode.type)) {
+    // 实例
     const component = createComponent(vnode.type, vnode.attrs)
     // 设置props
     setComponentProps(component, vnode.attrs)
-    return component._subtree
+    // 挂载实例
+    mountComponent(component)
+    dom = component._subtree
+    vnode._instance = component
   }
+  vnode._dom = dom
+  return dom
+}
+
+// oldVnode and vnode have same type, diff and patch dom
+function patchVnode(oldVnode, vnode) {
+  const type = vnode.type
+
+  if (utils.isText(type)) {
+    patchTextNode(oldVnode, vnode)
+    vnode._dom = oldVnode.dom
+  } else {
+    if (utils.isHtmlTag(type)) {
+      patchElement(oldVnode, vnode)
+    } else if (utils.isComponent(type)) {
+      patchComponent(oldVnode, vnode)
+    }
+    patchChildren(oldVnode, vnode)
+    vnode._dom = oldVnode._dom // dom 不变
+  }
+}
+
+function patchTextNode(oldVnode, vnode) {
+  if (oldVnode.children !== vnode.children) {
+    oldVnode._dom.textContent = vnode.children
+  }
+}
+
+function patchElement(oldVnode, vnode) {
+  const dom = oldVnode._dom
+  // patch attribute
+  const oldAttrs = oldVnode.attrs || {}
+  const newAttrs = vnode.attrs || {}
+  const oldAttrsKeys = Object.keys(oldAttrs)
+  const newAttrsKeys = Object.keys(newAttrs)
+
+  for (const key of oldAttrsKeys) {
+    // 1. key exists in old attrs but not in new attrs: REMOVE
+    if (typeof newAttrs[key] === 'undefined') {
+      // dom.removeAttribute(key)
+      // value is required in event unbinding
+      removeElementAttribute(dom, key, oldAttrs[key])
+    } else {
+      // 2. key exists in old attrs and new attrs with different value: UPDATE
+      if (newAttrs[key] !== oldAttrs[key]) {
+        setElementAttribute(dom, key, newAttrs[key])
+      }
+    }
+  }
+
+  for (const key of newAttrsKeys) {
+    // 3. key exists in new attrs but not in old attrs: ADD
+    if (typeof oldAttrs[key] === 'undefined') {
+      setElementAttribute(dom, key, newAttrs[key])
+    }
+  }
+}
+
+function patchComponent(oldVnode, vnode) {
+  // 1. patch attrs
+  // component instance
+  const instance = vnode._instance
+  // upadate component props
+  setComponentProps(instance, vnode.attrs)
+
+  // SCU lifecycle hook
+  if (
+    instance.shouldComponentUpdate &&
+    instance.shouldComponentUpdate(vnode.attrs, instance.porps) === false
+  ) {
+    return
+  }
+
+  // 2. mount / update component
+  mountComponent(instance)
+
+  vnode._instance = instance
+}
+
+function patchChildren(oldVnode, vnode) {
+  const oldChildren = oldVnode.children || []
+  const newChildren = vnode.children || []
+  for (let i = 0; i < newChildren.length; i++) {
+    // TODO
+    patch(oldChildren[i], newChildren[i])
+  }
+}
+
+function isSomeNode(v1, v2) {
+  if (
+    v1.attrs &&
+    v2.attrs &&
+    typeof v1.attrs.key !== 'undefined' &&
+    typeof v2.attrs.key !== 'undefined'
+  ) {
+    return v1.type === v2.type && v1.key === v2.key
+  }
+  return v1.type === v2.type
 }
 
 function createTextNode(text) {
   return document.createTextNode(text)
 }
 
-function createElm(vnode) {
+// vnode -> 原生dom
+function createElement(vnode) {
   const elem = document.createElement(vnode.type)
 
   // set attribute
   if (vnode.attrs) {
     Object.keys(vnode.attrs).forEach((key) =>
-      setAttribute(elem, key, vnode.attrs[key])
+      setElementAttribute(elem, key, vnode.attrs[key])
     )
   }
 
   // children
   if (vnode.children && vnode.children.length) {
-    vnode.children.forEach((child) => render(child, elem))
+    vnode.children.forEach((child) => {
+      patch(null, child, elem)
+    })
   }
   return elem
 }
 
-function setAttribute(dom, name, value) {
+function setElementAttribute(dom, name, value) {
   // className => class
   if (name === 'className') {
     dom.class = value
@@ -74,6 +207,20 @@ function setAttribute(dom, name, value) {
   }
 }
 
+function removeElementAttribute(dom, name, value) {
+  if (name === 'className') {
+    dom.class = ''
+    return
+  }
+  // 事件
+  let res = name.match(/^on(\w+)$/)
+  if (res) {
+    dom.removeEventListener(res[1].toLowerCase(), value)
+    return
+  }
+  dom.removeAttribute(name)
+}
+
 function setDomStyle(dom, value) {
   if (!value) return
   // 需要处理文本形式和对象形式
@@ -87,6 +234,7 @@ function setDomStyle(dom, value) {
   }
 }
 
+// create component instance
 function createComponent(component, props) {
   let instance
   if (component.prototype && component.prototype.render) {
@@ -110,32 +258,44 @@ function setComponentProps(component, props) {
     // not first mount
     component.componentWillReceiveProps(props)
   }
+
   component.props = props
-  mountComponent(component)
 }
 
-// mount the component
-export function mountComponent(component) {
-  // update the component
+// mount / update component
+function mountComponent(component) {
+  // update component
   if (component._subtree && component.componentWillUpdate) {
     component.componentWillUpdate()
   }
-  // vnode => dom
+
+  let subtree = component._subtree
   const vnode = component.render()
-  const subtree = _render(vnode)
 
-  // invoke lifecycle hooks
-  if (component._subtree) {
+  if (subtree) {
+    // update
+    patchVnode(component._vnode, vnode)
     if (component.componentDidUpdate) component.componentDidUpdate()
-  } else if (component.componentDidMount) {
-    component.componentDidMount()
+  } else {
+    // initial mount
+    subtree = mountVnode(vnode)
+    if (component.componentDidMount) component.componentDidMount()
   }
 
-  if (component._subtree && component._subtree.parentNode) {
-    component._subtree.parentNode.replaceChild(subtree, component._subtree)
-  }
   component._subtree = subtree
   subtree._component = component
+  component._vnode = vnode
+}
+
+// unmout the component
+function unmountComponent(component) {
+  if (component.componentWillUnmount) {
+    component.componentWillUnmount()
+  }
+}
+
+export function updateComponent(instance) {
+  patch(instance._vnode, instance.render())
 }
 
 // TODO: fiber

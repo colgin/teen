@@ -1,5 +1,5 @@
 // TODO: fix
-import { mountComponent } from 'teen-dom'
+import { updateComponent } from 'teen-dom'
 
 class Component {
   constructor(props = {}) {
@@ -9,7 +9,7 @@ class Component {
 
   setState(value) {
     Object.assign(this.state, value)
-    mountComponent(this)
+    updateComponent(this)
   }
 }
 

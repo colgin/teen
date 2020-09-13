@@ -12,28 +12,39 @@ class Count extends Teen.Component {
     super(props)
     this.state = {
       count: props.start,
+      color: 'green',
     }
     this.handleAdd = this.add.bind(this)
     this.handleSubstract = this.substract.bind(this)
+    this.changeRed = this.changeRed.bind(this)
   }
   add() {
     this.setState({
       count: this.state.count + 1,
+      color: 'green',
     })
   }
 
   substract() {
     this.setState({
       count: this.state.count - 1,
+      color: 'pink',
+    })
+  }
+
+  changeRed() {
+    this.setState({
+      color: 'red',
     })
   }
 
   render() {
     return (
       <div>
-        <p>{this.state.count}</p>
+        <h5 style={{ color: this.state.color }}>{this.state.count}</h5>
         <button onClick={this.handleAdd}>add</button>
-        <button onClick={this.handleSubstract}>minus</button>
+        <button onClick={this.handleSubstract}>substract</button>
+        <button onClick={this.changeRed}>red</button>
       </div>
     )
   }
@@ -55,7 +66,7 @@ class FormItem extends Teen.Component {
   render() {
     return (
       <div>
-        <p>{this.state.name}</p>
+        <p>value: {this.state.name}</p>
         <input value={this.state.name} onInput={this.handleNameChange} />
       </div>
     )

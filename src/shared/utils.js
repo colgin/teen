@@ -68,3 +68,16 @@ function makeMap(arr = []) {
     return acc
   }, Object.create(null))
 }
+
+export function asTextVnode(vnode) {
+  const type = typeof vnode
+  return vnode === null || ['undefined', 'string', 'number'].includes(type)
+}
+
+export function isComponent(type) {
+  return typeof type === 'function'
+}
+
+export function isText(type) {
+  return type === 'NODE_TEXT'
+}
