@@ -73,6 +73,45 @@ class FormItem extends Teen.Component {
   }
 }
 
+let i = 9
+class List extends Teen.Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      list: [],
+    }
+    this.pending = this.pending.bind(this)
+    this.del = this.del.bind(this)
+  }
+  pending() {
+    this.setState({
+      list: this.state.list.concat(i++),
+    })
+  }
+  del() {
+    const newValue = this.state.list.slice(0, -1)
+    this.setState({
+      list: newValue,
+    })
+  }
+  render() {
+    return (
+      <div>
+        <button onClick={this.pending}>pending</button>
+        <button onClick={this.del}>del</button>
+        {this.state.list.map((item) => (
+          <p
+            key={item}
+            style={{ width: '20px', height: '20px', background: 'red' }}
+          >
+            {item}
+          </p>
+        ))}
+      </div>
+    )
+  }
+}
+
 const App = (
   <div>
     <section>
@@ -95,6 +134,7 @@ const App = (
       <Functional name="colgin" age={12} />
       <Count start={4} />
       <FormItem />
+      <List />
     </section>
   </div>
 )

@@ -9,6 +9,7 @@ function parseVnode(vnode) {
       children: vnode === null || typeof vnode === 'undefined' ? '' : vnode,
     }
   }
+
   return vnode
 }
 
@@ -19,6 +20,8 @@ function createElement(type, attrs, ...children) {
     children: children.map((child) => parseVnode(child)),
   }
 }
+
+// function createElement(type, attrs, )
 
 export default {
   createElement,
