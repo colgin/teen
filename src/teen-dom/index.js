@@ -414,7 +414,6 @@ function unmountComponent(component) {
 }
 
 export function updateComponent(instance) {
-  debugger
   const newVnode = instance.render()
   patch(instance._vnode, newVnode)
   instance._vnode = newVnode
