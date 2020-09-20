@@ -1,13 +1,21 @@
 {
   "name": "teen",
   "version": "1.0.0",
-  "description": "",
-  "main": "react.js",
+  "description": "react like for learning",
+  "main": "lib/teen.common.js",
+  "module": "lib/teen.esm.js",
   "scripts": {
-    "dev": "webpack-dev-server --config webpack.config.js",
-    "build": "rollup --config rollup.config.js",
+    "dev": "cross-env NODE_ENV=development webpack-dev-server --config webpack.config.js",
+    "prebuild": "rimraf lib/ && rimraf dist/",
+    "build": "npm run build:lib && npm run build:demo",
+    "build:lib": "rollup --config rollup.config.js",
+    "build:demo": "cross-env NODE_ENV=production webpack --config webpack.config.js",
+    "deploy": "gh-pages -d dist",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "files": [
+    "lib"
+  ],
   "keywords": [],
   "author": "",
   "license": "MIT",
@@ -17,15 +25,19 @@
     "@babel/preset-react": "^7.10.4",
     "@rollup/plugin-json": "^4.1.0",
     "babel-loader": "^8.1.0",
+    "cross-env": "^7.0.2",
     "eslint": "^7.8.1",
     "eslint-plugin-react": "^7.20.6",
+    "gh-pages": "^3.1.0",
     "html-webpack-plugin": "^4.4.1",
     "husky": "^4.3.0",
     "lint-staged": "^10.3.0",
     "prettier": "^2.1.1",
+    "rimraf": "^3.0.2",
     "rollup": "^2.26.11",
     "rollup-plugin-terser": "^7.0.2",
     "webpack": "^4.44.1",
+    "webpack-dev-server": "^3.11.0",
     "webpack-cli": "^3.3.12"
   },
   "husky": {
@@ -37,6 +49,6 @@
     "*.js": "prettier --write"
   },
   "dependencies": {
-    "webpack-dev-server": "^3.11.0"
+    "core-js": "^3.6.5"
   }
 }

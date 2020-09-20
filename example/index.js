@@ -1,5 +1,4 @@
-import Teen from 'teen'
-import TeenDom from 'teen-dom'
+import { Teen, TeenDom } from 'teen'
 
 const Functional = (props) => (
   <p>

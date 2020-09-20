@@ -2,6 +2,7 @@ const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 
 module.exports = {
+  mode: process.env.NODE_ENV,
   entry: './example/index.js',
   output: {
     filename: '[name].js',
@@ -17,8 +18,7 @@ module.exports = {
   devServer: {},
   resolve: {
     alias: {
-      teen: path.resolve(__dirname, './src/teen/index.js'),
-      'teen-dom': path.resolve(__dirname, './src/teen-dom/index.js'),
+      teen: path.resolve(__dirname, './src/index.js'),
     },
   },
   plugins: [

@@ -1,4 +1,4 @@
-import { updateComponent } from 'teen-dom'
+import { updateComponent } from '../teen-dom/index'
 
 const queue = []
 const renderQueue = []
