@@ -16,18 +16,14 @@ function patch(oldVnode, vnode, container) {
 
   // destroy, unmount old dom
   if (!vnode) {
-    if (utils.isComponent(oldVnode.type)) {
-      unmountComponent(oldVnode._instance)
-    }
+    unmount(oldVnode)
     container.removeChild(oldVnode._dom)
     return
   }
 
   // vnode with different type, unmount old dom, append new dom
   if (oldVnode.type !== vnode.type) {
-    if (utils.isComponent(oldVnode)) {
-      unmountComponent(oldVnode._instance)
-    }
+    unmount(oldVnode)
     container.replaceChild(oldVnode._dom, mountVnode(vnode))
     return
   }
@@ -218,9 +214,7 @@ function patchChildren(oldVnode, vnode) {
     for (let i = oldStartIndex; i <= oldEndIndex; i++) {
       // has been moved
       if (oldChildren[i] !== undefined) {
-        if (utils.isComponent(oldChildren[i].type)) {
-          unmountComponent(oldChildren[i]._instance)
-        }
+        unmount(oldChildren[i])
         parent.removeChild(oldChildren[i]._dom)
       }
     }
@@ -406,10 +400,18 @@ function mountComponent(component) {
   component._vnode = vnode
 }
 
-// unmout the component
-function unmountComponent(component) {
-  if (component.componentWillUnmount) {
-    component.componentWillUnmount()
+// unmount component and its children
+function unmount(vnode) {
+  if (vnode.children && vnode.children.length) {
+    for (const childVnode of vnode.children) {
+      unmount(childVnode)
+    }
+  }
+  if (utils.isComponent(vnode.type)) {
+    const instance = vnode._instance
+    if (instance.componentWillUnmount) {
+      instance.componentWillUnmount()
+    }
   }
 }
 
