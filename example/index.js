@@ -139,6 +139,4 @@ const App = (
   </div>
 )
 
-console.log(App)
-
 TeenDom.render(App, document.getElementById('app'))

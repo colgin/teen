@@ -1,5 +1,4 @@
-// TODO: fix
-import { updateComponent } from 'teen-dom'
+import { enqueueSetState } from './queue'
 
 class Component {
   constructor(props = {}) {
@@ -8,8 +7,7 @@ class Component {
   }
 
   setState(value) {
-    Object.assign(this.state, value)
-    updateComponent(this)
+    enqueueSetState(value, this)
   }
 }
 
